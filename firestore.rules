@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validation functions
+    function isValidUserProfile(data) {
+      return data.uid is string && data.uid.size() <= 128
+        && data.name is string && data.name.size() <= 100
+        && data.email is string && data.email.size() <= 100
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 300))
+        && data.role is string && (data.role == 'user' || data.role == 'organizer' || data.role == 'bouncer')
+        && data.createdAt is number;
+    }
+
+    function isValidEventLocation(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.name is string && data.name.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.image is string && data.image.size() <= 300
+        && data.capacity is number && data.capacity >= 0
+        && data.address is string && data.address.size() <= 200
+        && data.rating is number && data.rating >= 0
+        && data.upcomingEventsCount is number && data.upcomingEventsCount >= 0;
+    }
+
+    function isValidEvent(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.title is string && data.title.size() <= 100
+        && data.description is string && data.description.size() <= 1000
+        && data.date is string && data.date.size() <= 50
+        && data.time is string && data.time.size() <= 50
+        && data.locationId is string && data.locationId.size() <= 100
+        && data.locationName is string && data.locationName.size() <= 100
+        && data.image is string && data.image.size() <= 300
+        && data.hostId is string && data.hostId.size() <= 100
+        && data.hostName is string && data.hostName.size() <= 100
+        && data.tiers is list
+        && data.capacity is number && data.capacity >= 0
+        && data.soldCount is number && data.soldCount >= 0
+        && data.status is string && (data.status == 'upcoming' || data.status == 'running' || data.status == 'past')
+        && data.bouncers is list
+        && data.scrambledWordPool is list
+        && data.createdAt is number;
+    }
+
+    function isValidTicket(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.eventId is string && data.eventId.size() <= 100
+        && data.eventTitle is string && data.eventTitle.size() <= 100
+        && data.eventDate is string && data.eventDate.size() <= 50
+        && data.eventTime is string && data.eventTime.size() <= 50
+        && data.eventLocation is string && data.eventLocation.size() <= 200
+        && data.eventImage is string && data.eventImage.size() <= 300
+        && data.buyerId is string && data.buyerId.size() <= 100
+        && data.buyerName is string && data.buyerName.size() <= 100
+        && data.buyerEmail is string && data.buyerEmail.size() <= 100
+        && data.tier is string && data.tier.size() <= 100
+        && data.price is number && data.price >= 0
+        && data.peopleCount is number && data.peopleCount >= 1
+        && data.securityCode is string && data.securityCode.size() <= 100
+        && data.qrCodeData is string && data.qrCodeData.size() <= 2000
+        && data.status is string && (data.status == 'active' || data.status == 'used' || data.status == 'cancelled')
+        && data.createdAt is number
+        && (!('scannedAt' in data) || (data.scannedAt is number))
+        && (!('scannedBy' in data) || (data.scannedBy is string && data.scannedBy.size() <= 100))
+        && (!('scannedByName' in data) || (data.scannedByName is string && data.scannedByName.size() <= 100));
+    }
+
+    function isValidInvitation(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.eventId is string && data.eventId.size() <= 100
+        && data.eventTitle is string && data.eventTitle.size() <= 100
+        && data.hostName is string && data.hostName.size() <= 100
+        && data.status is string && (data.status == 'pending' || data.status == 'accepted' || data.status == 'expired')
+        && data.createdAt is number;
+    }
+
+    // Rules for collections
+    match /users/{userId} {
+      allow get: if isSignedIn() && userId == request.auth.uid;
+      allow create: if isSignedIn() && userId == request.auth.uid && isValidUserProfile(incoming()) && isValidId(userId);
+      allow update: if isSignedIn() && userId == request.auth.uid && isValidUserProfile(incoming()) && isValidId(userId)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'photoURL', 'role']);
+    }
+
+    match /locations/{locationId} {
+      allow get, list: if resource.data.id != null;
+      allow create, update: if isValidEventLocation(incoming()) && isValidId(locationId);
+    }
+
+    match /events/{eventId} {
+      allow get, list: if resource.data.id != null;
+      allow create, update: if isValidEvent(incoming()) && isValidId(eventId);
+    }
+
+    match /tickets/{ticketId} {
+      allow get, list: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.eventId != null);
+      allow create: if isSignedIn() && isValidTicket(incoming()) && isValidId(ticketId);
+      allow update: if isSignedIn() && isValidTicket(incoming()) && isValidId(ticketId) && (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'scannedAt', 'scannedBy', 'scannedByName']) || resource.data.buyerId == request.auth.uid);
+    }
+
+    match /invitations/{invitationId} {
+      allow get, list: if isSignedIn() && resource.data.id != null;
+      allow create: if isSignedIn() && isValidInvitation(incoming()) && isValidId(invitationId);
+      allow update: if isSignedIn() && isValidInvitation(incoming()) && isValidId(invitationId) && incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+    }
+  }
+}

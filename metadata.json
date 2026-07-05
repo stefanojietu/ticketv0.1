@@ -1,0 +1,6 @@
+{
+  "name": "Event Managing and Ticket Sync System",
+  "description": "A full-stack Spotify-styled music event manager and ticket sync portal, featuring scrambled-word ticket QR generation, image downloads, and live multi-device bouncer check-in synchronization.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

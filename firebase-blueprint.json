@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "organizer", "bouncer"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["uid", "name", "email", "role", "createdAt"]
+    },
+    "EventLocation": {
+      "title": "EventLocation",
+      "description": "Venue / Event Location",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "capacity": { "type": "number" },
+        "address": { "type": "string" },
+        "rating": { "type": "number" },
+        "upcomingEventsCount": { "type": "number" }
+      },
+      "required": ["id", "name", "description", "image", "capacity", "address", "rating", "upcomingEventsCount"]
+    },
+    "EventDetails": {
+      "title": "EventDetails",
+      "description": "Details of an event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "locationId": { "type": "string" },
+        "locationName": { "type": "string" },
+        "image": { "type": "string" },
+        "hostId": { "type": "string" },
+        "hostName": { "type": "string" },
+        "tiers": { "type": "array" },
+        "capacity": { "type": "number" },
+        "soldCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["upcoming", "running", "past"] },
+        "bouncers": { "type": "array" },
+        "scrambledWordPool": { "type": "array" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "title", "description", "date", "time", "locationId", "locationName", "image", "hostId", "hostName", "tiers", "capacity", "soldCount", "status", "bouncers", "scrambledWordPool", "createdAt"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Ticket purchased by a fan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventId": { "type": "string" },
+        "eventTitle": { "type": "string" },
+        "eventDate": { "type": "string" },
+        "eventTime": { "type": "string" },
+        "eventLocation": { "type": "string" },
+        "eventImage": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "buyerEmail": { "type": "string" },
+        "tier": { "type": "string" },
+        "price": { "type": "number" },
+        "peopleCount": { "type": "number" },
+        "securityCode": { "type": "string" },
+        "qrCodeData": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "used", "cancelled"] },
+        "scannedAt": { "type": "number" },
+        "scannedBy": { "type": "string" },
+        "scannedByName": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "eventId", "eventTitle", "eventDate", "eventTime", "eventLocation", "eventImage", "buyerId", "buyerName", "buyerEmail", "tier", "price", "peopleCount", "securityCode", "qrCodeData", "status", "createdAt"]
+    },
+    "BouncerInvitation": {
+      "title": "BouncerInvitation",
+      "description": "Invitation to join a bouncer team",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventId": { "type": "string" },
+        "eventTitle": { "type": "string" },
+        "hostName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "expired"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "eventId", "eventTitle", "hostName", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile collection"
+    },
+    "locations/{locationId}": {
+      "schema": "EventLocation",
+      "description": "Venues and locations"
+    },
+    "events/{eventId}": {
+      "schema": "EventDetails",
+      "description": "Concert events list"
+    },
+    "tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Fan tickets"
+    },
+    "invitations/{invitationId}": {
+      "schema": "BouncerInvitation",
+      "description": "Co-bouncer team invitations"
+    }
+  }
+}
